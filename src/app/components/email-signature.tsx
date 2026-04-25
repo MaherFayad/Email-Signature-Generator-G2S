@@ -17,11 +17,11 @@ import {
 } from './ui/dropdown-menu';
 import { toast } from 'sonner';
 import Svgexport from '../../imports/Svgexport121-2/Svgexport121-2002-169';
-// Pure HTML logo block for clipboard output — avoids SVG data-URL text-node
-// extraction bugs in Gmail/Outlook that caused the signature to paste twice.
-const g2sLogoHTML = (size: number) => {
-  const fs = Math.round(size * 0.29);
-  return `<table cellpadding="0" cellspacing="0"><tr><td width="${size}" height="${size}" style="width:${size}px;height:${size}px;background:#0f172a;border-radius:4px;text-align:center;vertical-align:middle;font-family:Arial,sans-serif;font-size:${fs}px;font-weight:800;color:#ffffff;letter-spacing:1px;line-height:${size}px">G2S</td></tr></table>`;
+import g2sDarkPngInline from '../../../G2S Dark.png?inline';
+
+// Use PNG for clipboard output so pasted signatures keep the logo in email clients.
+const g2sLogoEmailHTML = (size: number, _unusedTextColor?: string) => {
+  return `<table cellpadding="0" cellspacing="0" style="display:inline-table;vertical-align:top;border-collapse:collapse"><tr><td width="${size}" height="${size}" style="width:${size}px;height:${size}px;min-width:${size}px;background-color:transparent;vertical-align:middle;text-align:center"><img src="${g2sDarkPngInline}" width="${size}" height="${size}" alt="G2S logo" style="display:block;width:${size}px;height:${size}px;border:0;outline:none;text-decoration:none" /></td></tr></table>`;
 };
 
 // ─── Inline SVG icon strings for clipboard HTML output ────────────────────────
@@ -35,7 +35,15 @@ const svgPin = (c = '#9ca3af') => svgIcon('<path d="M20 10c0 4.993-5.539 10.193-
 const svgLinkedin = (c = '#9ca3af') => svgIcon('<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/>', c);
 
 // ─── G2S Logo wrapper ─────────────────────────────────────────────────────────
-function G2SLogo({ size = 72, bgColor = '#0f172a' }: { size?: number; bgColor?: string }) {
+function G2SLogo({
+  size = 72,
+  bgColor = '#0f172a',
+  fillColor = '#ffffff',
+}: {
+  size?: number;
+  bgColor?: string;
+  fillColor?: string;
+}) {
   return (
     <div
       style={{
@@ -45,10 +53,12 @@ function G2SLogo({ size = 72, bgColor = '#0f172a' }: { size?: number; bgColor?: 
         borderRadius: 4,
         flexShrink: 0,
         overflow: 'hidden',
-        padding: Math.round(size * 0.08),
+        padding: Math.round(size * 0.06),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        // CSS custom property controls the SVG path fill colour
+        ['--fill-0' as string]: fillColor,
       }}
     >
       <Svgexport />
@@ -57,7 +67,7 @@ function G2SLogo({ size = 72, bgColor = '#0f172a' }: { size?: number; bgColor?: 
 }
 
 type Brand = 'g2s' | 'bishop';
-type LayoutOption = 'a' | 'b' | 'c';
+type LayoutOption = 'a';
 
 // ─── Bishop & Finch inline logo ───────────────────────────────────────────────
 function BishopFinchLogo({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
@@ -87,7 +97,7 @@ function IconRow({
   textColor = '#4b5563',
   fontSize = 13,
 }: {
-  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>;
   text: string;
   iconColor?: string;
   textColor?: string;
@@ -97,7 +107,8 @@ function IconRow({
     <tr>
       <td style={{ padding: '2.5px 0', verticalAlign: 'middle' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize, color: textColor }}>
-          <Icon size={13} color={iconColor} strokeWidth={2} />
+          {/* Use inline CSS style (beats SVG presentation attributes and any class rule) */}
+          <Icon size={13} strokeWidth={2} style={{ stroke: iconColor, fill: 'none', color: iconColor, flexShrink: 0 }} />
           {text}
         </span>
       </td>
@@ -115,25 +126,28 @@ function G2SPreviewA({ data }: { data: FormData }) {
           <tr>
             {/* Left: Logo */}
             <td style={{ verticalAlign: 'top', paddingRight: 18 }}>
-              <G2SLogo size={68} bgColor="#0f172a" />
-              <div style={{ height: 3, backgroundColor: '#fff', marginTop: 6, width: 68, borderRadius: 2 }} />
+              <G2SLogo size={68} bgColor="transparent" fillColor="#0f172a" />
             </td>
             {/* Right: Content */}
             <td style={{ verticalAlign: 'top', borderLeft: '1px solid #e5e7eb', paddingLeft: 18 }}>
               <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 16, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                 {data.name}
               </div>
-              <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 3, fontWeight: 400 }}>
-                {data.title}
-                {data.company && (
-                  <span style={{ color: '#94a3b8' }}> · </span>
+              <div style={{ marginTop: 3, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#6b7280', fontWeight: 400 }}>
+                <span>{data.title}</span>
+                {data.email && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: '#94a3b8' }}>-</span>
+                    <span style={{ color: '#4b5563' }}>{data.email}</span>
+                  </span>
                 )}
-                <span style={{ fontWeight: 600, color: '#374151' }}>{data.company}</span>
               </div>
+              {data.company && (
+                <div style={{ fontSize: 12.5, marginTop: 2, fontWeight: 600, color: '#374151' }}>{data.company}</div>
+              )}
               <div style={{ borderTop: '1px solid #f1f5f9', margin: '10px 0 6px' }} />
               <table cellPadding={0} cellSpacing={0}>
                 <tbody>
-                  {data.email && <IconRow icon={Mail} text={data.email} />}
                   {data.phone && <IconRow icon={Phone} text={data.phone} />}
                   {data.website && <IconRow icon={Globe} text={data.website} />}
                   {data.linkedin && <IconRow icon={Linkedin} text={data.linkedin} />}
@@ -156,7 +170,7 @@ function G2SPreviewB({ data }: { data: FormData }) {
     <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: 520, borderRadius: 6, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
       {/* Dark header */}
       <div style={{ backgroundColor: '#0f172a', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <G2SLogo size={52} bgColor="#1e293b" />
+        <G2SLogo size={52} bgColor="transparent" fillColor="#ffffff" />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: '#f8fafc', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1.2 }}>
             {data.name}
@@ -186,28 +200,29 @@ function G2SPreviewB({ data }: { data: FormData }) {
 // ─── G2S Preview C – Data Minimal ────────────────────────────────────────────
 // Compact single-row layout with a clean data-inspired underline accent.
 function G2SPreviewC({ data }: { data: FormData }) {
+  const icStyle = { stroke: '#94a3b8', fill: 'none', color: '#94a3b8' } as const;
   const contactParts = [
     data.email && (
       <span key="email" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <Mail size={11} color="#94a3b8" strokeWidth={2} />
+        <Mail size={11} strokeWidth={2} style={icStyle} />
         <span>{data.email}</span>
       </span>
     ),
     data.phone && (
       <span key="phone" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <Phone size={11} color="#94a3b8" strokeWidth={2} />
+        <Phone size={11} strokeWidth={2} style={icStyle} />
         <span>{data.phone}</span>
       </span>
     ),
     data.website && (
       <span key="web" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <Globe size={11} color="#94a3b8" strokeWidth={2} />
+        <Globe size={11} strokeWidth={2} style={icStyle} />
         <span>{data.website}</span>
       </span>
     ),
     data.address && (
       <span key="addr" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <MapPin size={11} color="#94a3b8" strokeWidth={2} />
+        <MapPin size={11} strokeWidth={2} style={icStyle} />
         <span>{data.address}</span>
       </span>
     ),
@@ -219,7 +234,7 @@ function G2SPreviewC({ data }: { data: FormData }) {
         <tbody>
           <tr>
             <td style={{ verticalAlign: 'middle', paddingRight: 14, borderRight: '2px solid #0f172a' }}>
-              <G2SLogo size={46} bgColor="#0f172a" />
+              <G2SLogo size={46} bgColor="transparent" fillColor="#0f172a" />
             </td>
             <td style={{ paddingLeft: 14, verticalAlign: 'middle' }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.7px' }}>
@@ -255,11 +270,14 @@ function BishopPreviewA({ data }: { data: FormData }) {
       </div>
       <div style={{ backgroundColor: '#fff', padding: '14px 24px', border: '1px solid #e8e4dd', borderTop: 'none' }}>
         <div style={{ fontSize: 17, fontWeight: 600, color: '#0a1220', marginBottom: 2 }}>{data.name}</div>
-        <div style={{ fontSize: 13, color: '#888', fontStyle: 'italic', marginBottom: 8 }}>{data.title}{data.company && `, ${data.company}`}</div>
+        <div style={{ fontSize: 13, color: '#888', fontStyle: 'italic', marginBottom: 8 }}>
+          {data.title}
+          {data.company && <span>{` - ${data.company}`}</span>}
+          {data.email && <span style={{ color: '#555', fontStyle: 'normal' }}>{` - ${data.email}`}</span>}
+        </div>
         <div style={{ borderTop: '1px solid #e8e4dd', paddingTop: 8 }}>
           <table cellPadding={0} cellSpacing={0}>
             <tbody>
-              {data.email && <IconRow icon={Mail} text={data.email} iconColor="#c9a96e" textColor="#555" fontSize={12.5} />}
               {data.phone && <IconRow icon={Phone} text={data.phone} iconColor="#c9a96e" textColor="#555" fontSize={12.5} />}
               {data.website && <IconRow icon={Globe} text={data.website} iconColor="#c9a96e" textColor="#555" fontSize={12.5} />}
               {data.linkedin && <IconRow icon={Linkedin} text={data.linkedin} iconColor="#c9a96e" textColor="#555" fontSize={12.5} />}
@@ -311,17 +329,17 @@ function BishopPreviewC({ data }: { data: FormData }) {
       <div style={{ fontSize: 12.5, color: '#555', fontFamily: 'Arial, sans-serif', lineHeight: '1.9' }}>
         {data.email && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <Mail size={11} color="#c9a96e" strokeWidth={2} />{data.email}
+            <Mail size={11} strokeWidth={2} style={{ stroke: '#c9a96e', fill: 'none', color: '#c9a96e' }} />{data.email}
           </div>
         )}
         {data.phone && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <Phone size={11} color="#c9a96e" strokeWidth={2} />{data.phone}
+            <Phone size={11} strokeWidth={2} style={{ stroke: '#c9a96e', fill: 'none', color: '#c9a96e' }} />{data.phone}
           </div>
         )}
         {data.website && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <Globe size={11} color="#c9a96e" strokeWidth={2} />{data.website}
+            <Globe size={11} strokeWidth={2} style={{ stroke: '#c9a96e', fill: 'none', color: '#c9a96e' }} />{data.website}
           </div>
         )}
         {data.address && (
@@ -431,21 +449,19 @@ export function EmailSignature() {
   <table cellpadding="0" cellspacing="0" style="border-collapse:collapse">
     <tr>
       <td style="vertical-align:top;padding-right:18px">
-        ${g2sLogoHTML(68)}
-        <div style="height:3px;width:68px;background:#fff;border-radius:2px;margin-top:6px"></div>
+        ${g2sLogoEmailHTML(68, '#0f172a')}
       </td>
       <td style="vertical-align:top;border-left:1px solid #e5e7eb;padding-left:18px">
         <div style="font-size:16px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:.6px">${data.name}</div>
-        <div style="font-size:12.5px;color:#6b7280;margin-top:3px">${data.title}${data.company ? `<span style="color:#94a3b8"> · </span><span style="font-weight:600;color:#374151">${data.company}</span>` : ''}</div>
+        <div style="font-size:12.5px;color:#6b7280;margin-top:3px;display:inline-flex;align-items:center;gap:8px">${data.title}${data.email ? `<span style="display:inline-flex;align-items:center;gap:6px"><span style="color:#94a3b8">-</span><span style="color:#4b5563">${data.email}</span></span>` : ''}</div>
+        ${data.company ? `<div style="font-size:12.5px;margin-top:2px;font-weight:600;color:#374151">${data.company}</div>` : ''}
         <div style="border-top:1px solid #f1f5f9;margin:10px 0 6px"></div>
         <table cellpadding="0" cellspacing="0">
-          ${data.email ? contactRow(svgMail, data.email, '#9ca3af') : ''}
           ${data.phone ? contactRow(svgPhone, data.phone, '#9ca3af') : ''}
           ${data.website ? contactRow(svgGlobe, data.website, '#9ca3af') : ''}
           ${data.linkedin ? contactRow(svgLinkedin, data.linkedin, '#9ca3af') : ''}
           ${data.address ? contactRow(svgPin, data.address, '#9ca3af') : ''}
         </table>
-        <div style="margin-top:10px;font-size:10.5px;color:#cbd5e1;letter-spacing:.8px;text-transform:uppercase;font-weight:500">growth2success.com</div>
       </td>
     </tr>
   </table>
@@ -459,7 +475,7 @@ export function EmailSignature() {
       <td style="padding:14px 18px;vertical-align:middle">
         <table cellpadding="0" cellspacing="0"><tr>
           <td style="padding-right:16px;vertical-align:middle">
-            ${g2sLogoHTML(52)}
+            ${g2sLogoEmailHTML(52, '#ffffff')}
           </td>
           <td style="vertical-align:middle">
             <div style="font-size:17px;font-weight:700;color:#f8fafc;text-transform:uppercase;letter-spacing:.8px;line-height:1.2">${data.name}</div>
@@ -493,7 +509,7 @@ export function EmailSignature() {
   <table cellpadding="0" cellspacing="0" style="border-collapse:collapse">
     <tr>
       <td style="vertical-align:middle;padding-right:14px;border-right:2px solid #0f172a">
-        ${g2sLogoHTML(46)}
+        ${g2sLogoEmailHTML(46, '#0f172a')}
       </td>
       <td style="padding-left:14px;vertical-align:middle">
         <div style="font-size:14px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:.7px">${data.name}</div>
@@ -521,10 +537,9 @@ export function EmailSignature() {
   </div>
   <div style="background-color:#fff;padding:14px 24px;border:1px solid #e8e4dd;border-top:none">
     <div style="font-size:17px;font-weight:600;color:#0a1220;margin-bottom:2px">${data.name}</div>
-    <div style="font-size:13px;color:#888;font-style:italic;margin-bottom:8px">${data.title}${data.company ? `, ${data.company}` : ''}</div>
+    <div style="font-size:13px;color:#888;font-style:italic;margin-bottom:8px">${data.title}${data.company ? ` - ${data.company}` : ''}${data.email ? ` - <span style="color:#555;font-style:normal">${data.email}</span>` : ''}</div>
     <div style="border-top:1px solid #e8e4dd;padding-top:8px">
       <table cellpadding="0" cellspacing="0">
-        ${data.email ? bfContactRow(svgMail, data.email) : ''}
         ${data.phone ? bfContactRow(svgPhone, data.phone) : ''}
         ${data.website ? bfContactRow(svgGlobe, data.website) : ''}
         ${data.linkedin ? bfContactRow(svgLinkedin, data.linkedin) : ''}
@@ -570,6 +585,136 @@ export function EmailSignature() {
 </div>`;
   };
 
+  // ─── Paste-safe HTML (no SVG, no data URLs — survives Gmail/Outlook paste) ───
+  const generatePasteHTML = (): string => {
+    // Unicode text symbols that render as characters (not emoji) in email contexts
+    const ic = (sym: string, color = '#9ca3af', fontSize = 13) =>
+      `<span style="font-size:${fontSize}px;color:${color};margin-right:5px;font-family:Arial,sans-serif">${sym}</span>`;
+
+    const row = (sym: string, text: string, symColor = '#9ca3af', textColor = '#4b5563') =>
+      `<tr><td style="padding:2.5px 0;font-size:13px;color:${textColor};font-family:Arial,sans-serif;vertical-align:middle">${ic(sym, symColor)}${text}</td></tr>`;
+
+    if (brand === 'g2s') {
+      const bar = (w: number) => `<div style="height:3px;width:${w}px;background-color:#0f172a;border-radius:2px;margin-top:6px"></div>`;
+      const rows = [
+        data.phone   ? row('✆', data.phone) : '',
+        data.website ? row('⊕', data.website) : '',
+        data.linkedin ? row('in', data.linkedin) : '',
+        data.address ? row('◎', data.address) : '',
+      ].join('');
+
+      if (layout === 'a') {
+        return `<div style="font-family:Arial,sans-serif;max-width:520px">
+  <table cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>
+    <td style="vertical-align:top;padding-right:18px">${g2sLogoEmailHTML(68, '#0f172a')}</td>
+    <td style="vertical-align:top;border-left:1px solid #e5e7eb;padding-left:18px">
+      <div style="font-size:16px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:.6px;font-family:Arial,sans-serif">${data.name}</div>
+      <div style="font-size:12.5px;color:#6b7280;margin-top:3px;font-family:Arial,sans-serif;display:inline-flex;align-items:center;gap:8px">${data.title}${data.email ? ` <span style="display:inline-flex;align-items:center;gap:6px"><span style="color:#94a3b8">-</span><span style="color:#4b5563">${data.email}</span></span>` : ''}</div>
+      ${data.company ? `<div style="font-size:12.5px;margin-top:2px;font-weight:600;color:#374151;font-family:Arial,sans-serif">${data.company}</div>` : ''}
+      <div style="border-top:1px solid #f1f5f9;margin:10px 0 6px"></div>
+      <table cellpadding="0" cellspacing="0"><tbody>${rows}</tbody></table>
+    </td>
+  </tr></table>
+</div>`;
+      }
+      if (layout === 'b') {
+        const rowsDark = [
+          data.email   ? row('✉', data.email, '#64748b', '#374151') : '',
+          data.phone   ? row('✆', data.phone, '#64748b', '#374151') : '',
+          data.website ? row('⊕', data.website, '#64748b', '#374151') : '',
+          data.linkedin ? row('in', data.linkedin, '#64748b', '#374151') : '',
+          data.address ? row('◎', data.address, '#64748b', '#374151') : '',
+        ].join('');
+        return `<div style="font-family:Arial,sans-serif;max-width:520px;border-radius:6px;border:1px solid #e2e8f0">
+  <table cellpadding="0" cellspacing="0" style="width:100%;background-color:#0f172a;border-radius:5px 5px 0 0"><tr>
+    <td style="padding:14px 18px;vertical-align:middle">
+      <table cellpadding="0" cellspacing="0"><tr>
+        <td style="padding-right:16px;vertical-align:middle">${g2sLogoEmailHTML(52, '#ffffff')}</td>
+        <td style="vertical-align:middle">
+          <div style="font-size:17px;font-weight:700;color:#f8fafc;text-transform:uppercase;letter-spacing:.8px;font-family:Arial,sans-serif">${data.name}</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:3px;font-family:Arial,sans-serif">${data.title}${data.company ? ` · <span style="color:#ffffff;font-weight:600">${data.company}</span>` : ''}</div>
+        </td>
+      </tr></table>
+    </td>
+  </tr></table>
+  <div style="background-color:#ffffff;padding:12px 18px 14px;border-top:3px solid #ffffff">
+    <table cellpadding="0" cellspacing="0"><tbody>${rowsDark}</tbody></table>
+  </div>
+</div>`;
+      }
+      // Layout C
+      const parts = [
+        data.email   ? `${ic('✉', '#9ca3af', 11)}${data.email}` : '',
+        data.phone   ? `${ic('✆', '#9ca3af', 11)}${data.phone}` : '',
+        data.website ? `${ic('⊕', '#9ca3af', 11)}${data.website}` : '',
+        data.address ? `${ic('◎', '#9ca3af', 11)}${data.address}` : '',
+      ].filter(Boolean).join('<span style="color:#e2e8f0;margin:0 8px">|</span>');
+      return `<div style="font-family:Arial,sans-serif;max-width:520px">
+  <table cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>
+    <td style="vertical-align:middle;padding-right:14px;border-right:2px solid #0f172a">${g2sLogoEmailHTML(46, '#0f172a')}</td>
+    <td style="padding-left:14px;vertical-align:middle">
+      <div style="font-size:14px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:.7px;font-family:Arial,sans-serif">${data.name}</div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:2px;font-family:Arial,sans-serif">${data.title}${data.company ? ` · <span style="color:#94a3b8">${data.company}</span>` : ''}</div>
+      <div style="height:2px;width:40px;background-color:#0f172a;border-radius:1px;margin:6px 0"></div>
+      ${parts ? `<div style="font-size:11.5px;color:#4b5563;font-family:Arial,sans-serif;line-height:1.8">${parts}</div>` : ''}
+    </td>
+  </tr></table>
+</div>`;
+    }
+
+    // ── Bishop & Finch ────────────────────────────────────────────────────────
+    const bfRow = (sym: string, text: string) =>
+      `<tr><td style="padding:2.5px 0;font-size:12.5px;color:#555;font-family:Arial,sans-serif">${ic(sym, '#c9a96e', 12)}${text}</td></tr>`;
+    const bfRows = [
+      data.phone   ? bfRow('✆', data.phone) : '',
+      data.website ? bfRow('⊕', data.website) : '',
+      data.linkedin ? bfRow('in', data.linkedin) : '',
+      data.address ? bfRow('◎', data.address) : '',
+    ].join('');
+
+    if (layout === 'a') {
+      return `<div style="font-family:Georgia,serif;max-width:520px;border-radius:4px;border:1px solid #e8e4dd">
+  <div style="background-color:#0a1220;padding:18px 24px">
+    <div style="font-size:26px;font-weight:500;color:#e8e4dd;font-family:Georgia,serif">Bishop <em style="color:#c9a96e;font-style:italic">&amp;</em> Finch</div>
+    <div style="width:48px;height:2px;background-color:#c9a96e;margin-top:8px"></div>
+  </div>
+  <div style="background-color:#ffffff;padding:14px 24px">
+  <div style="font-size:17px;font-weight:600;color:#0a1220;margin-bottom:2px;font-family:Georgia,serif">${data.name}</div>
+  <div style="font-size:13px;color:#888;font-style:italic;margin-bottom:8px;font-family:Georgia,serif">${data.title}${data.company ? ` - ${data.company}` : ''}${data.email ? ` - <span style="color:#555;font-style:normal">${data.email}</span>` : ''}</div>
+    <div style="border-top:1px solid #e8e4dd;padding-top:8px">
+      <table cellpadding="0" cellspacing="0"><tbody>${bfRows}</tbody></table>
+    </div>
+  </div>
+</div>`;
+    }
+    if (layout === 'b') {
+      return `<div style="font-family:Georgia,serif;max-width:520px;border-left:3px solid #c9a96e;padding-left:20px">
+  <div style="font-size:24px;font-weight:500;color:#0a1220;font-family:Georgia,serif">Bishop <em style="color:#c9a96e;font-style:italic">&amp;</em> Finch</div>
+  <div style="font-size:16px;font-weight:500;color:#0a1220;margin-top:8px;font-family:Georgia,serif">${data.name}</div>
+  <div style="font-size:13px;color:#888;font-style:italic;margin-bottom:10px;font-family:Georgia,serif">${data.title}${data.company ? `, ${data.company}` : ''}</div>
+  <div style="border-top:1px solid #ddd;padding-top:8px">
+    <table cellpadding="0" cellspacing="0"><tbody>${bfRows}</tbody></table>
+  </div>
+</div>`;
+    }
+    return `<div style="font-family:Georgia,serif;max-width:520px;text-align:center">
+  <div style="font-size:28px;font-weight:500;color:#0a1220;letter-spacing:1px;font-family:Georgia,serif">Bishop <em style="color:#c9a96e;font-style:italic">&amp;</em> Finch</div>
+  <table cellpadding="0" cellspacing="0" style="width:100%;margin:10px 0"><tr>
+    <td style="border-bottom:1px solid #c9a96e">&nbsp;</td>
+    <td style="width:10px;text-align:center;color:#c9a96e">◆</td>
+    <td style="border-bottom:1px solid #c9a96e">&nbsp;</td>
+  </tr></table>
+  <div style="font-size:16px;font-weight:600;color:#0a1220;font-family:Georgia,serif">${data.name}</div>
+  <div style="font-size:13px;color:#888;font-style:italic;margin-bottom:10px;font-family:Georgia,serif">${data.title}${data.company ? ` · ${data.company}` : ''}</div>
+  <div style="font-size:12.5px;color:#555;font-family:Arial,sans-serif;line-height:1.9">
+    ${data.email   ? `<div>${ic('✉', '#c9a96e', 12)}${data.email}</div>` : ''}
+    ${data.phone   ? `<div>${ic('✆', '#c9a96e', 12)}${data.phone}</div>` : ''}
+    ${data.website ? `<div>${ic('⊕', '#c9a96e', 12)}${data.website}</div>` : ''}
+    ${data.address ? `<div>${ic('◎', '#c9a96e', 12)}${data.address}</div>` : ''}
+  </div>
+</div>`;
+  };
+
   type CopyFormat = 'rich' | 'html' | 'text';
   const [copiedFormat, setCopiedFormat] = useState<CopyFormat | null>(null);
 
@@ -606,9 +751,7 @@ export function EmailSignature() {
   };
 
   const copyAsRich = () => {
-    // Strip <link> font tags — they cause a double-paste in email clients and
-    // webfonts don't work in email anyway.
-    const html = generateHTML().replace(/<link\b[^>]*>/gi, '').trim();
+    const html = generatePasteHTML();
     if (navigator.clipboard?.write) {
       const blob = new Blob([html], { type: 'text/html' });
       navigator.clipboard
@@ -738,64 +881,52 @@ export function EmailSignature() {
               <CardTitle className="flex items-center gap-2">
                 <Layout className="size-4" /> Choose Layout
               </CardTitle>
-              <CardDescription>Pick a style for your {isBishop ? 'Bishop & Finch' : 'G2S'} signature</CardDescription>
+              <CardDescription>Single approved layout for your {isBishop ? 'Bishop & Finch' : 'G2S'} signature</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {brand === 'g2s' ? (
-                <>
-                  <LayoutCard label="Layout A – Enterprise Pro" selected={layout === 'a'} onClick={() => setLayout('a')}>
-                    <G2SPreviewA data={data} />
-                  </LayoutCard>
-                  <LayoutCard label="Layout B – Dark Infrastructure" selected={layout === 'b'} onClick={() => setLayout('b')}>
-                    <G2SPreviewB data={data} />
-                  </LayoutCard>
-                  <LayoutCard label="Layout C – Data Minimal" selected={layout === 'c'} onClick={() => setLayout('c')}>
-                    <G2SPreviewC data={data} />
-                  </LayoutCard>
-                </>
+                <LayoutCard label="Layout A – Enterprise Pro" selected={layout === 'a'} onClick={() => setLayout('a')}>
+                  <G2SPreviewA data={data} />
+                </LayoutCard>
               ) : (
-                <>
-                  <LayoutCard label="Layout A – Dark Elegant" selected={layout === 'a'} onClick={() => setLayout('a')}>
-                    <BishopPreviewA data={data} />
-                  </LayoutCard>
-                  <LayoutCard label="Layout B – Gold Accent" selected={layout === 'b'} onClick={() => setLayout('b')}>
-                    <BishopPreviewB data={data} />
-                  </LayoutCard>
-                  <LayoutCard label="Layout C – Centred Classic" selected={layout === 'c'} onClick={() => setLayout('c')}>
-                    <BishopPreviewC data={data} />
-                  </LayoutCard>
-                </>
+                <LayoutCard label="Layout A – Dark Elegant" selected={layout === 'a'} onClick={() => setLayout('a')}>
+                  <BishopPreviewA data={data} />
+                </LayoutCard>
               )}
             </CardContent>
           </Card>
 
           {/* Split copy button */}
-          <div className="flex rounded-lg overflow-hidden shadow-sm" style={{ border: isBishop ? '1px solid #0a1220' : '1px solid #0f172a' }}>
-            <Button
+          <div className="flex shadow-sm" style={{ borderRadius: 8 }}>
+            <button
               onClick={copyAsRich}
-              className="flex-1 rounded-none border-0"
-              size="lg"
-              style={isBishop ? { backgroundColor: '#0a1220', color: '#c9a96e' } : { backgroundColor: '#0f172a', color: '#fff' }}
+              className="flex flex-1 items-center justify-center gap-2 text-sm font-semibold px-4 h-11 transition-opacity hover:opacity-90"
+              style={{
+                backgroundColor: isBishop ? '#0a1220' : '#0f172a',
+                color: isBishop ? '#c9a96e' : '#fff',
+                borderRadius: '8px 0 0 8px',
+              }}
             >
               {copiedFormat === 'rich' ? (
-                <><Check className="mr-2 size-4" /> Copied!</>
+                <><Check className="size-4" /> Copied!</>
               ) : (
-                <><ClipboardPaste className="mr-2 size-4" /> Copy Signature</>
+                <><ClipboardPaste className="size-4" /> Copy Signature</>
               )}
-            </Button>
-            <div style={{ width: 1, backgroundColor: isBishop ? '#1e2d40' : '#1e293b' }} />
+            </button>
+            <div style={{ width: 1, backgroundColor: isBishop ? '#2a3a50' : '#2d3f55', flexShrink: 0 }} />
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  className="rounded-none border-0 px-3"
-                  size="lg"
-                  style={isBishop ? { backgroundColor: '#0a1220', color: '#c9a96e' } : { backgroundColor: '#0f172a', color: '#fff' }}
-                >
-                  <ChevronDown className="size-4" />
-                </Button>
+              <DropdownMenuTrigger
+                className="flex items-center justify-center px-3 h-11 outline-none transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: isBishop ? '#0a1220' : '#0f172a',
+                  color: isBishop ? '#c9a96e' : '#fff',
+                  borderRadius: '0 8px 8px 0',
+                }}
+              >
+                <ChevronDown className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuItem onClick={copyAsRich} className="gap-3 py-2.5">
+                <DropdownMenuItem onSelect={copyAsRich} className="gap-3 py-2.5">
                   <ClipboardPaste className="size-4 text-gray-500 shrink-0" />
                   <div>
                     <div className="font-medium text-sm">Paste-Ready</div>
@@ -804,7 +935,7 @@ export function EmailSignature() {
                   {copiedFormat === 'rich' && <Check className="ml-auto size-3.5 text-green-500" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={copyAsHTML} className="gap-3 py-2.5">
+                <DropdownMenuItem onSelect={copyAsHTML} className="gap-3 py-2.5">
                   <Code className="size-4 text-gray-500 shrink-0" />
                   <div>
                     <div className="font-medium text-sm">HTML Source</div>
@@ -812,7 +943,7 @@ export function EmailSignature() {
                   </div>
                   {copiedFormat === 'html' && <Check className="ml-auto size-3.5 text-green-500" />}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={copyAsText} className="gap-3 py-2.5">
+                <DropdownMenuItem onSelect={copyAsText} className="gap-3 py-2.5">
                   <AlignLeft className="size-4 text-gray-500 shrink-0" />
                   <div>
                     <div className="font-medium text-sm">Plain Text</div>
