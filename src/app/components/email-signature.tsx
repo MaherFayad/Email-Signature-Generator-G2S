@@ -17,12 +17,16 @@ import {
 } from './ui/dropdown-menu';
 import { toast } from 'sonner';
 import Svgexport from '../../imports/Svgexport121-2/Svgexport121-2002-169';
-import g2sDarkPngInline from '../../../G2S Dark.png?inline';
+const g2sDarkPngInline = new URL('../../../G2S Dark.png', import.meta.url).href;
+const bishopFinchPngInline = new URL('../../../Bishop & Finch.png', import.meta.url).href;
 
 // Use PNG for clipboard output so pasted signatures keep the logo in email clients.
 const g2sLogoEmailHTML = (size: number, _unusedTextColor?: string) => {
   return `<table cellpadding="0" cellspacing="0" style="display:inline-table;vertical-align:top;border-collapse:collapse"><tr><td width="${size}" height="${size}" style="width:${size}px;height:${size}px;min-width:${size}px;background-color:transparent;vertical-align:middle;text-align:center"><img src="${g2sDarkPngInline}" width="${size}" height="${size}" alt="G2S logo" style="display:block;width:${size}px;height:${size}px;border:0;outline:none;text-decoration:none" /></td></tr></table>`;
 };
+
+const bishopLogoEmailHTML = (width = 230) =>
+  `<img src="${bishopFinchPngInline}" width="${width}" alt="Bishop & Finch logo" style="display:block;width:${width}px;height:auto;border:0;outline:none;text-decoration:none" />`;
 
 // ─── Inline SVG icon strings for clipboard HTML output ────────────────────────
 const svgIcon = (path: string, color = '#9ca3af') =>
@@ -523,7 +527,7 @@ export function EmailSignature() {
     }
 
     // ─── Bishop & Finch HTML ─────────────────────────────────────────────────
-    const bfLogoHTML = `<span style="font-family:'Cormorant Garamond',serif;font-weight:500;font-size:inherit;color:#e8e4dd">Bishop <em style="color:#c9a96e;font-style:italic">&amp;</em> Finch</span>`;
+    const bfLogoHTML = bishopLogoEmailHTML(230);
 
     const bfContactRow = (svgFn: (c?: string) => string, text: string) =>
       `<tr><td style="padding:2.5px 0;font-size:12.5px;color:#555;vertical-align:middle;font-family:Arial,sans-serif">${svgFn('#c9a96e')}${text}</td></tr>`;
@@ -532,7 +536,7 @@ export function EmailSignature() {
       return `<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400&display=swap" rel="stylesheet">
 <div style="font-family:'Cormorant Garamond',serif;max-width:520px;border-radius:4px;overflow:hidden">
   <div style="background-color:#0a1220;padding:18px 24px">
-    <div style="font-size:26px;font-weight:500">${bfLogoHTML}</div>
+    <div>${bfLogoHTML}</div>
     <div style="width:48px;height:2px;background-color:#c9a96e;margin-top:8px"></div>
   </div>
   <div style="background-color:#fff;padding:14px 24px;border:1px solid #e8e4dd;border-top:none">
@@ -675,7 +679,7 @@ export function EmailSignature() {
     if (layout === 'a') {
       return `<div style="font-family:Georgia,serif;max-width:520px;border-radius:4px;border:1px solid #e8e4dd">
   <div style="background-color:#0a1220;padding:18px 24px">
-    <div style="font-size:26px;font-weight:500;color:#e8e4dd;font-family:Georgia,serif">Bishop <em style="color:#c9a96e;font-style:italic">&amp;</em> Finch</div>
+    <div>${bishopLogoEmailHTML(230)}</div>
     <div style="width:48px;height:2px;background-color:#c9a96e;margin-top:8px"></div>
   </div>
   <div style="background-color:#ffffff;padding:14px 24px">
