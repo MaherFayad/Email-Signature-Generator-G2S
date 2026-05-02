@@ -1177,8 +1177,8 @@ function Thumbnail({ type, variant }: { type: string; variant: string }) {
 }
 
 // ── HTML generator (email-safe, responsive) ────────────────────────────────────
-function generateEmailHTML(sections: EmailSection[]): string {
-  const sectionsHTML = sections
+function generateSectionsRows(sections: EmailSection[]): string {
+  return sections
     .map((s) => {
       if (s.type === 'header' && s.variant === 'logo-centered') {
         const img = `<img src="${s.logoSrc}" width="220" alt="Nurtureme" style="display:block;max-width:220px;height:auto;border:0;" />`;
@@ -1288,7 +1288,18 @@ function generateEmailHTML(sections: EmailSection[]): string {
       return '';
     })
     .join('');
+}
 
+// Paste-ready: just the 600 px content table, no wrapper, no <head>.
+// This is the only thing that goes on the clipboard for "Paste-Ready" copy.
+function generatePasteTable(sections: EmailSection[]): string {
+  const rows = generateSectionsRows(sections)
+    .replace(/<!--[\s\S]*?-->/g, '') // strip HTML comments — Gmail can split on them
+    .trim();
+  return `<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;"><tbody>${rows}</tbody></table>`;
+}
+
+function generateEmailHTML(sections: EmailSection[]): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1302,9 +1313,7 @@ function generateEmailHTML(sections: EmailSection[]): string {
 <body style="margin:0;padding:0;background-color:#f0f4f7;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f4f7;">
     <tr><td align="center" style="padding:40px 20px;">
-      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
-        ${sectionsHTML}
-      </table>
+      ${generatePasteTable(sections)}
     </td></tr>
   </table>
 </body>
@@ -1350,13 +1359,46 @@ export function NurtureEmail() {
   };
 
   const copyAsRich = () => {
-    // Use the table-based email HTML (fixed 600 px, inline styles) so Gmail/Outlook
-    // honour the column widths and padding on paste instead of reflowing the DOM clone.
-    const html = generateEmailHTML(sections);
+    const html = generatePasteTable(sections);
+
+    // Use position:fixed so the element stays in the viewport — Chrome blocks
+    // execCommand('copy') on off-screen (left:-9999px) elements, causing it to
+    // silently return false and fall through to ClipboardItem which double-pastes.
+    const el = document.createElement('div');
+    el.setAttribute('contenteditable', 'true');
+    el.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.001;overflow:hidden;pointer-events:none;';
+    el.innerHTML = html;
+    document.body.appendChild(el);
+
+    let ok = false;
+    try {
+      el.focus();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(range);
+        ok = document.execCommand('copy');
+        sel.removeAllRanges();
+      }
+    } finally {
+      document.body.removeChild(el);
+    }
+
+    if (ok) {
+      markCopied('rich', 'Copied! Paste directly into Gmail / Outlook.');
+      return;
+    }
+
+    // Fallback: use ClipboardItem with text/html only.
+    // Do NOT include text/plain — an empty plain-text entry causes Gmail to
+    // paste the HTML content a second time, resulting in a duplicate.
     if (navigator.clipboard?.write) {
-      const blob = new Blob([html], { type: 'text/html' });
       navigator.clipboard
-        .write([new ClipboardItem({ 'text/html': blob })])
+        .write([new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+        })])
         .then(() => markCopied('rich', 'Copied! Paste directly into Gmail / Outlook.'))
         .catch(() => writeText(html, () => markCopied('html', 'Rich text unavailable — HTML copied.')));
     } else {
