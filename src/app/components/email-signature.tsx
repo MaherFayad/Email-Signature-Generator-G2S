@@ -28,6 +28,16 @@ const g2sLogoEmailHTML = (size: number, _unusedTextColor?: string) => {
 const bishopLogoEmailHTML = (width = 230) =>
   `<img src="${bishopFinchPngInline}" width="${width}" alt="Bishop & Finch logo" style="display:block;width:${width}px;height:auto;border:0;outline:none;text-decoration:none" />`;
 
+// ─── Nurtureme brand ───────────────────────────────────────────────────────────
+const NM_TEAL = '#29b9c5';
+const NM_BG   = '#e9f3ff';
+const NM_DARK = '#1a1a2e';
+
+const nmLogoSrc = new URL('../../../Nurture me logo.svg', import.meta.url).href;
+
+// Wave background PNG (used as header image across all 3 layouts)
+const nmWaveSrc = new URL('../../../nurture-wave.png', import.meta.url).href;
+
 // ─── Inline SVG icon strings for clipboard HTML output ────────────────────────
 const svgIcon = (path: string, color = '#9ca3af') =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;display:inline-block">${path}</svg>`;
@@ -70,8 +80,8 @@ function G2SLogo({
   );
 }
 
-type Brand = 'g2s' | 'bishop';
-type LayoutOption = 'a';
+type Brand = 'g2s' | 'bishop' | 'nurture';
+type LayoutOption = 'a' | 'b' | 'c';
 
 // ─── Bishop & Finch inline logo ───────────────────────────────────────────────
 function BishopFinchLogo({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
@@ -356,6 +366,44 @@ function BishopPreviewC({ data }: { data: FormData }) {
   );
 }
 
+// ─── Nurtureme Previews ───────────────────────────────────────────────────────
+
+// A – Wave Splash: wave PNG header with logo overlaid, teal bar, white body
+function NurturePreviewA({ data }: { data: FormData }) {
+  return (
+    <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: 520, borderRadius: 8, overflow: 'hidden', border: '1px solid #dde9f7' }}>
+      {/* Wave header */}
+      <div style={{ position: 'relative' }}>
+        <img src={nmWaveSrc} alt="" aria-hidden="true"
+          style={{ display: 'block', width: '100%', height: 72, objectFit: 'cover', objectPosition: 'top center' }} />
+        {/* Logo overlaid on wave */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 22px' }}>
+          <img src={nmLogoSrc} alt="nurtureme" style={{ height: 26, width: 'auto', display: 'block' }} />
+        </div>
+      </div>
+      {/* Teal accent bar */}
+      <div style={{ height: 3, backgroundColor: NM_TEAL }} />
+      {/* White body */}
+      <div style={{ backgroundColor: '#ffffff', padding: '14px 22px' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: NM_DARK, marginBottom: 1 }}>{data.name}</div>
+        <div style={{ fontSize: 12.5, color: NM_TEAL, marginBottom: 8 }}>
+          {data.title}{data.company && <span style={{ color: '#6b7280' }}> · {data.company}</span>}
+        </div>
+        <div style={{ borderTop: '1px solid #eef5f8', marginBottom: 8 }} />
+        <table cellPadding={0} cellSpacing={0}>
+          <tbody>
+            {data.email    && <IconRow icon={Mail}    text={data.email}    iconColor={NM_TEAL} textColor="#374151" fontSize={12.5} />}
+            {data.phone    && <IconRow icon={Phone}   text={data.phone}    iconColor={NM_TEAL} textColor="#374151" fontSize={12.5} />}
+            {data.website  && <IconRow icon={Globe}   text={data.website}  iconColor={NM_TEAL} textColor="#374151" fontSize={12.5} />}
+            {data.linkedin && <IconRow icon={Linkedin} text={data.linkedin} iconColor={NM_TEAL} textColor="#374151" fontSize={12.5} />}
+            {data.address  && <IconRow icon={MapPin}  text={data.address}  iconColor={NM_TEAL} textColor="#374151" fontSize={12.5} />}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormData {
   name: string;
@@ -388,6 +436,17 @@ const defaultBishop: FormData = {
   website: 'www.bishopfinch.com',
   linkedin: 'linkedin.com/in/charlottefinch',
   address: '30 N Gould St #10830 Sheridan, WY 82801',
+};
+
+const defaultNurture: FormData = {
+  name: 'Ava Mitchell',
+  title: 'Talent Sourcing Specialist',
+  company: 'Nurtureme',
+  email: 'ava@nurtureme.ai',
+  phone: '+1 (786) 641-7097',
+  website: 'nurtureme.ai',
+  linkedin: 'linkedin.com/company/nurtureme',
+  address: '',
 };
 
 // ─── Layout card ──────────────────────────────────────────────────────────────
@@ -426,9 +485,10 @@ export function EmailSignature() {
   const [layout, setLayout] = useState<LayoutOption>('a');
   const [g2sData, setG2sData] = useState<FormData>(defaultG2S);
   const [bishopData, setBishopData] = useState<FormData>(defaultBishop);
+  const [nurtureData, setNurtureData] = useState<FormData>(defaultNurture);
 
-  const data = brand === 'g2s' ? g2sData : bishopData;
-  const setData = brand === 'g2s' ? setG2sData : setBishopData;
+  const data = brand === 'g2s' ? g2sData : brand === 'bishop' ? bishopData : nurtureData;
+  const setData = brand === 'g2s' ? setG2sData : brand === 'bishop' ? setBishopData : setNurtureData;
 
   const handleChange = (field: keyof FormData, value: string) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -526,6 +586,16 @@ export function EmailSignature() {
 </div>`;
     }
 
+    // ─── Nurtureme HTML ──────────────────────────────────────────────────────
+    if (brand === 'nurture') {
+      const nmRow = (svgFn: (c?: string) => string, text: string) =>
+        `<tr><td style="padding:2.5px 0;font-size:12.5px;color:#374151;vertical-align:middle;font-family:Arial,sans-serif">${svgFn(NM_TEAL)}${text}</td></tr>`;
+
+      if (layout === 'a') {
+        return `<div style="font-family:Arial,sans-serif;max-width:520px;border-radius:8px;overflow:hidden;border:1px solid #dde9f7"><table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse"><tr><td background="${nmWaveSrc}" style="background-image:url(${nmWaveSrc});background-size:cover;background-position:top center;background-color:#dce8f5;height:72px;padding:0 22px;vertical-align:middle"><img src="${nmLogoSrc}" height="26" alt="nurtureme" style="display:block;height:26px;width:auto;border:0" /></td></tr><tr><td bgcolor="${NM_TEAL}" height="3" style="height:3px;line-height:0;font-size:0">&nbsp;</td></tr><tr><td bgcolor="#ffffff" style="padding:14px 22px"><div style="font-size:16px;font-weight:700;color:${NM_DARK};margin-bottom:1px">${data.name}</div><div style="font-size:12.5px;color:${NM_TEAL};margin-bottom:8px">${data.title}${data.company ? `<span style="color:#6b7280"> · ${data.company}</span>` : ''}</div><div style="border-top:1px solid #eef5f8;margin-bottom:8px"></div><table cellpadding="0" cellspacing="0">${data.email ? nmRow(svgMail, data.email) : ''}${data.phone ? nmRow(svgPhone, data.phone) : ''}${data.website ? nmRow(svgGlobe, data.website) : ''}${data.linkedin ? nmRow(svgLinkedin, data.linkedin) : ''}${data.address ? nmRow(svgPin, data.address) : ''}</table></td></tr></table></div>`;
+      }
+    }
+
     // ─── Bishop & Finch HTML ─────────────────────────────────────────────────
     const bfLogoHTML = bishopLogoEmailHTML(230);
 
@@ -587,6 +657,7 @@ export function EmailSignature() {
     ${data.address ? `<div>${svgPin('#c9a96e')}${data.address}</div>` : ''}
   </div>
 </div>`;
+
   };
 
   // ─── Paste-safe HTML (no SVG, no data URLs — survives Gmail/Outlook paste) ───
@@ -664,6 +735,16 @@ export function EmailSignature() {
     </td>
   </tr></table>
 </div>`;
+    }
+
+    // ── Nurtureme ─────────────────────────────────────────────────────────────
+    if (brand === 'nurture') {
+      const nmPasteRow = (sym: string, text: string) =>
+        `<tr><td style="padding:2.5px 0;font-size:12.5px;color:#374151;font-family:Arial,sans-serif;vertical-align:middle">${ic(sym, NM_TEAL, 12)}${text}</td></tr>`;
+
+      if (layout === 'a') {
+        return `<div style="font-family:Arial,sans-serif;max-width:520px;border-radius:8px;overflow:hidden;border:1px solid #dde9f7"><table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse"><tr><td background="${nmWaveSrc}" style="background-image:url(${nmWaveSrc});background-size:cover;background-position:top center;background-color:#dce8f5;height:72px;padding:0 22px;vertical-align:middle"><img src="${nmLogoSrc}" height="26" alt="nurtureme" style="display:block;height:26px;width:auto;border:0" /></td></tr><tr><td bgcolor="${NM_TEAL}" height="3" style="height:3px;line-height:0;font-size:0">&nbsp;</td></tr><tr><td bgcolor="#ffffff" style="padding:14px 22px"><div style="font-size:16px;font-weight:700;color:${NM_DARK};font-family:Arial,sans-serif">${data.name}</div><div style="font-size:12.5px;color:${NM_TEAL};margin-bottom:8px;font-family:Arial,sans-serif">${data.title}${data.company ? ` · ${data.company}` : ''}</div><div style="border-top:1px solid #eef5f8;margin-bottom:8px"></div><table cellpadding="0" cellspacing="0"><tbody>${data.email ? nmPasteRow('✉', data.email) : ''}${data.phone ? nmPasteRow('✆', data.phone) : ''}${data.website ? nmPasteRow('⊕', data.website) : ''}${data.linkedin ? nmPasteRow('in', data.linkedin) : ''}${data.address ? nmPasteRow('◎', data.address) : ''}</tbody></table></td></tr></table></div>`;
+      }
     }
 
     // ── Bishop & Finch ────────────────────────────────────────────────────────
@@ -808,6 +889,17 @@ export function EmailSignature() {
             'Bishop & Finch'
           )}
         </button>
+        <button
+          onClick={() => handleBrandChange('nurture')}
+          className={`flex-1 py-3 px-6 text-sm font-semibold transition-all ${
+            brand === 'nurture'
+              ? 'text-white'
+              : 'bg-white text-gray-500 hover:bg-gray-50'
+          }`}
+          style={brand === 'nurture' ? { backgroundColor: NM_TEAL } : {}}
+        >
+          nurtureme
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -815,7 +907,9 @@ export function EmailSignature() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {isBishop ? (
+              {brand === 'nurture' ? (
+                <span style={{ color: NM_TEAL }}>nurtureme</span>
+              ) : isBishop ? (
                 <span style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                   Bishop <em style={{ color: '#c9a96e', fontStyle: 'italic' }}>&</em> Finch
                 </span>
@@ -885,12 +979,20 @@ export function EmailSignature() {
               <CardTitle className="flex items-center gap-2">
                 <Layout className="size-4" /> Choose Layout
               </CardTitle>
-              <CardDescription>Single approved layout for your {isBishop ? 'Bishop & Finch' : 'G2S'} signature</CardDescription>
+              <CardDescription>
+                {brand === 'nurture'
+                  ? 'Choose a layout for your nurtureme signature'
+                  : `Single approved layout for your ${isBishop ? 'Bishop & Finch' : 'G2S'} signature`}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {brand === 'g2s' ? (
                 <LayoutCard label="Layout A – Enterprise Pro" selected={layout === 'a'} onClick={() => setLayout('a')}>
                   <G2SPreviewA data={data} />
+                </LayoutCard>
+              ) : brand === 'nurture' ? (
+                <LayoutCard label="Layout A – Wave Splash" selected={layout === 'a'} onClick={() => setLayout('a')}>
+                  <NurturePreviewA data={data} />
                 </LayoutCard>
               ) : (
                 <LayoutCard label="Layout A – Dark Elegant" selected={layout === 'a'} onClick={() => setLayout('a')}>
@@ -906,7 +1008,7 @@ export function EmailSignature() {
               onClick={copyAsRich}
               className="flex flex-1 items-center justify-center gap-2 text-sm font-semibold px-4 h-11 transition-opacity hover:opacity-90"
               style={{
-                backgroundColor: isBishop ? '#0a1220' : '#0f172a',
+                backgroundColor: brand === 'nurture' ? NM_TEAL : isBishop ? '#0a1220' : '#0f172a',
                 color: isBishop ? '#c9a96e' : '#fff',
                 borderRadius: '8px 0 0 8px',
               }}
@@ -917,12 +1019,12 @@ export function EmailSignature() {
                 <><ClipboardPaste className="size-4" /> Copy Signature</>
               )}
             </button>
-            <div style={{ width: 1, backgroundColor: isBishop ? '#2a3a50' : '#2d3f55', flexShrink: 0 }} />
+            <div style={{ width: 1, backgroundColor: brand === 'nurture' ? '#1fa8b3' : isBishop ? '#2a3a50' : '#2d3f55', flexShrink: 0 }} />
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="flex items-center justify-center px-3 h-11 outline-none transition-opacity hover:opacity-90"
                 style={{
-                  backgroundColor: isBishop ? '#0a1220' : '#0f172a',
+                  backgroundColor: brand === 'nurture' ? NM_TEAL : isBishop ? '#0a1220' : '#0f172a',
                   color: isBishop ? '#c9a96e' : '#fff',
                   borderRadius: '0 8px 8px 0',
                 }}
